@@ -1,0 +1,60 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pyinstaller customtkinter uiautomation pywin32 pystray Pillow psutil send2trash comtypes
+          if ($LASTEXITCODE -ne 0) { throw 'pip install failed' }
+
+      - name: Build with PyInstaller (onedir)
+        shell: pwsh
+        run: |
+          python build_exe.py
+          if ($LASTEXITCODE -ne 0 -or -not (Test-Path dist\SizeScanner\SizeScanner.exe)) { throw 'PyInstaller build failed' }
+
+      - name: Collect runtime files
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force app-dist | Out-Null
+          Copy-Item dist\SizeScanner\* app-dist -Recurse -Force
+
+      - name: Ensure the release exists
+        if: github.ref_type == 'tag'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release view $env:TAG -R $env:GITHUB_REPOSITORY *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create $env:TAG --generate-notes -R $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) { throw 'could not create the release' }
+          }
+
+      - uses: projectGloria/GloriaSetup@v0.1.0
+        with:
+          app-dir: app-dist
+          manifest: gloria.toml
+          certificate: ${{ secrets.WINDOWS_PFX_BASE64 }}
+          certificate-password: ${{ secrets.WINDOWS_PFX_PASSWORD }}

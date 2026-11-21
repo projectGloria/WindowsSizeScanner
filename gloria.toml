@@ -1,0 +1,10 @@
+id            = "WindowsSizeScanner"
+name          = "WindowsSizeScanner"
+version       = "0.2.0"
+main_exe      = "SizeScanner.exe"
+icon          = "icon.ico"
+accent        = "#fbbf24"
+description   = "In-place folder sizes inside Windows Explorer"
+needs_webview2 = false
+data_folders  = ["%APPDATA%\\SizeScanner"]
+legacy_names  = []
