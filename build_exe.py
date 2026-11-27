@@ -13,6 +13,10 @@ def build():
 
     print("Building SizeScanner.exe...")
 
+    # FileDescription/ProductName = gloria.toml name; the release check requires it.
+    version_file = os.path.join(script_dir, "build", "version_info.txt")
+    subprocess.check_call([sys.executable, "write_version_info.py", version_file])
+
     # PyInstaller command
     cmd = [
         sys.executable, "-m", "PyInstaller",
@@ -21,6 +25,7 @@ def build():
         "--windowed",           # no console window
         "--name", "SizeScanner",
         "--icon", "icon.ico",
+        "--version-file", version_file,
         "--add-data", f"icon.ico{os.pathsep}.",
         "--collect-all", "customtkinter",
         "--collect-all", "uiautomation",
